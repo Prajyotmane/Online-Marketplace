@@ -1,8 +1,8 @@
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:marketplace/CacheFileManager.dart';
 import 'package:marketplace/InstaPostFeed.dart';
 import 'package:flutter/material.dart';
+import 'package:marketplace/MyOrders.dart';
 import 'package:marketplace/Signup.dart';
 import 'package:marketplace/services/auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +43,7 @@ class _MyAppState extends State<MyApp> {
     return (!regex.hasMatch(value)) ? false : true;
   }
 
+
   //Check if user is logged in by checking the sharedpreferences data
   Future<bool> _isUserLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
@@ -60,39 +61,52 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        home: Scaffold(
-            appBar: AppBar(
-              centerTitle: true,
-              title: Text("MarketPlace"),
-              backgroundColor: Colors.black,
-            ),
-            body: FutureBuilder(
-                future: _isUserLoggedIn(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.data == true) {
-                      return InstaPostFeed();
+        home: Builder(
+          builder:(context) => Scaffold(
+              appBar: AppBar(
+                centerTitle: true,
+                title: Text("MarketPlace"),
+                backgroundColor: Colors.black,
+                actions: [
+                  IconButton(icon: Icon(Icons.shopping_cart), onPressed: ()
+                  {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MyOrders(),
+                        ));
+                  }),
+                  IconButton(icon: Icon(Icons.logout), onPressed: () {})
+                ],
+              ),
+              body: FutureBuilder(
+                  future: _isUserLoggedIn(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      if (snapshot.data == true) {
+                        return InstaPostFeed();
+                      } else {
+                        return Signup();
+                      }
                     } else {
-                      return Signup();
+                      return SimpleDialog(
+                          backgroundColor: Colors.black,
+                          children: <Widget>[
+                            Center(
+                              child: Column(children: [
+                                CircularProgressIndicator(),
+                                SizedBox(
+                                  height: 20,
+                                ),
+                                Text(
+                                  "Please wait",
+                                  style: TextStyle(color: Colors.white),
+                                )
+                              ]),
+                            )
+                          ]);
                     }
-                  } else {
-                    return SimpleDialog(
-                        backgroundColor: Colors.black,
-                        children: <Widget>[
-                          Center(
-                            child: Column(children: [
-                              CircularProgressIndicator(),
-                              SizedBox(
-                                height: 20,
-                              ),
-                              Text(
-                                "Please wait",
-                                style: TextStyle(color: Colors.white),
-                              )
-                            ]),
-                          )
-                        ]);
-                  }
-                })));
+                  })),
+        ));
   }
 }

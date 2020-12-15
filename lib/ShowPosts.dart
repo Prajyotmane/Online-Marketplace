@@ -76,14 +76,14 @@ class _ShowPostsState extends State<ShowPosts> {
     return ListView.builder(
         itemCount: orderIDs!=null?orderIDs.length:0,
         itemBuilder: (context, index) {
-          return InkWell(
+          return orderDetails[index]["is_available"]?InkWell(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                     builder: (context) =>
                         DetailedPost(orderIDs[index].toString(), widget.category)),
-              );
+              ).then((value) => setState((){}));
             },
             child: Padding(
               padding:
@@ -100,7 +100,7 @@ class _ShowPostsState extends State<ShowPosts> {
                 ),
               ),
             ),
-          );
+          ):null;
         });
   }
 

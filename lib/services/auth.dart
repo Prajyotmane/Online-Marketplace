@@ -217,4 +217,25 @@ class AuthClass {
       return false;
     }
   }
+
+  Future<bool> completeItemPurchase(String oid, String category, String owner) async{
+    String userID = _auth.currentUser.uid;
+    try {
+      await _orderRef
+          .child(category)
+          .child(oid)
+          .update({"is_available": false});
+      await _userRef
+          .child(userID)
+          .child("purchased")
+          .update({oid: category});
+      await _userRef
+          .child(owner)
+          .child("sold")
+          .update({oid: category});
+      return true;
+    } on Exception catch(e){
+      return false;
+    }
+  }
 }

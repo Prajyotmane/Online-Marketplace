@@ -32,6 +32,7 @@ dependencies:
   screen_loader: ^2.0.1
   shared_preferences: ^0.5.10
   path_provider:
+  square_in_app_payments: ^1.5.1
 
 
   # The following adds the Cupertino Icons font to your application.

@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'package:marketplace/CategoriesProvider.dart';
 import 'package:marketplace/ShowPosts.dart';
 import 'package:flutter/material.dart';
-import 'constants.dart';
 import 'APICalls.dart';
-import 'MakePost.dart';
+import 'dart:io';
+import 'dart:convert';
 
 class NickNameList extends StatefulWidget {
   @override
@@ -11,48 +11,49 @@ class NickNameList extends StatefulWidget {
 }
 
 class _NickNameListState extends State<NickNameList> {
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: ApiCalls.getNickNames(),
-        builder:(context, snapshot){
-          if(snapshot.connectionState == ConnectionState.done){
-            if (snapshot.data!=null) {
-              return ListView.builder(
-                itemCount: snapshot.data.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 2.0),
-                    child: Card(
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ShowPosts(snapshot.data[index],true)),
-                          );
-                        },
-                        title: Text(snapshot.data[index]),
-                        leading: CircleAvatar(
-                          backgroundImage: AssetImage('assets/image_placeholder.png'),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-            else{
-              return Center(child: Text("No data found in cache"),);
-            }
-          }else{
-            return Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                ));
-          }
-
-        });
+      future: DefaultAssetBundle.of(context).loadString("assets/categories.json"),
+      builder: (context, snapshot){
+       if(snapshot.connectionState == ConnectionState.done){
+         CategoryProvider.cp.setCategory(json.decode(snapshot.data.toString())['categories']);
+         return GridView.count(
+           padding: EdgeInsets.all(4.0),
+           crossAxisCount: 2,
+           childAspectRatio: 0.80,
+           shrinkWrap: true,
+           children: List.generate(CategoryProvider.cp.category.length, (index) {
+             return InkWell(
+               onTap: (){
+                 Navigator.push(
+                   context,
+                   MaterialPageRoute(
+                       builder: (context) => ShowPosts(CategoryProvider.cp.category[index])),
+                 );
+               },
+               child: Center(
+                     child: Card(
+                       child: Column(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           Expanded(
+                               flex: 3, child: Image.asset("assets/"+(index+1).toString()+".png",
+                           )
+                           ),
+                           Expanded(flex: 1,
+                               child: Text(CategoryProvider.cp.category[index]))
+                         ],
+                       ),
+                     )),
+             );
+           }),
+         );
+       }else{
+         return Center(child: CircularProgressIndicator());
+       }
+      }
+    );
   }
 }
-

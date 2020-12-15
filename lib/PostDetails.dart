@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:marketplace/RateThePost.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:marketplace/services/auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'APICalls.dart';
@@ -10,9 +11,9 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 /* This class shows the single post window containing rating and comments on the posts*/
 class DetailedPost extends StatefulWidget {
-  String id;
+  String oid, category;
 
-  DetailedPost(this.id);
+  DetailedPost(this.oid, this.category);
 
   @override
   _DetailedPostState createState() => _DetailedPostState();
@@ -23,41 +24,16 @@ class _DetailedPostState extends State<DetailedPost> {
   final _commentFormKey = GlobalKey<FormState>();
   int currentRating = 0;
 
-  Widget _loadImage(String id) {
-    return FutureBuilder(
-      future: ApiCalls.getImage(id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (snapshot.data == null) {
-            return Tooltip(
-              message: "This post does not have image",
-              //This message is displayed when user long presses the wrapped widget
-              child: Container(),
-            );
-          } else {
-            try {
-              Uint8List bytes = base64.decode(snapshot.data);
-              return Image.memory(
-                bytes,
-                height: 250.0,
-                fit: BoxFit.fill,
-              );
-            } catch (exception) {
-              //If image is invalid
-              return Tooltip(
-                message: "This image is broken",
-                child: Container(
-                    height: 100.0,
-                    child: Center(child: Icon(Icons.broken_image))),
-              );
-            }
-          }
-        } else {
-          return Container(
-              height: 200.0, child: Center(child: CircularProgressIndicator()));
-        }
-      },
-    );
+  Widget _loadImage(String imageURL) {
+    if (imageURL != null) {
+      return Image.network(
+        imageURL,
+        height: 200.0,
+        fit: BoxFit.fill,
+      );
+    } else {
+      return Image(image: AssetImage('assets/placeholder_image.png'));
+    }
   }
 
   //Read user credentials from sharedpreferences
@@ -70,48 +46,32 @@ class _DetailedPostState extends State<DetailedPost> {
     return userCreds;
   }
 
-  Future<bool> _rateThePost() async {
-    return showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return RateThePostDialog();
-        }).then((rating) {
-      currentRating = rating.round();
-      if (currentRating > 0) {
-        return _getUserCredentials().then((value) {
-          String email = value[0];
-          String password = value[1];
-          return ApiCalls.rateThePost(
-                  email, password, int.parse(widget.id), currentRating)
-              .then((value) => value);
-        });
-      } else {
-        return false;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Material(
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: Text("InstaPost"),
+          title: Text("MarketPlace"),
           backgroundColor: Colors.black,
         ),
         body: FutureBuilder(
-          future: ApiCalls.getPostForPostID(widget.id),
+          future: AuthClass().getOrderDetails(widget.oid, widget.category),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
-              String caption = snapshot.data['post']['text'].trim();
-              String hashtags = snapshot.data['post']['hashtags'].join(" ");
-              double rating =
-                  snapshot.data['post']['ratings-average'].toDouble();
-              String ratingCount =
-                  snapshot.data['post']['ratings-count'].toString();
-              List<dynamic> comments = snapshot.data['post']['comments'];
+              // print(snapshot.data["interested_users"].keys);
+              Iterable interested_users =
+                  snapshot.data["interested_users"].keys;
+              List<String> userIdsFromComments =
+                  snapshot.data["comments"].keys.toList();
+              print(userIdsFromComments.toString());
+              List<dynamic> commentTexts =
+                  snapshot.data["comments"].values.toList();
+              print(commentTexts.toString());
+              bool isInterested =
+                  interested_users.contains(AuthClass().getCurrentUser())
+                      ? true
+                      : false;
               return SingleChildScrollView(
                 child: SafeArea(
                   child: Padding(
@@ -126,98 +86,148 @@ class _DetailedPostState extends State<DetailedPost> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _loadImage(widget.id),
+                                _loadImage(snapshot.data["imageURL"]),
                                 Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      caption,
-                                      style: TextStyle(fontSize: 18.0),
-                                    )),
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                    "\$" + snapshot.data["price"],
+                                    style: TextStyle(
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                    snapshot.data["title"],
+                                    style: TextStyle(
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: RichText(
+                                      text: TextSpan(
+                                    style: DefaultTextStyle.of(context).style,
+                                    children: <TextSpan>[
+                                      TextSpan(
+                                          text: snapshot.data["likes"],
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                      TextSpan(
+                                          text:
+                                              ' people are interested in this'),
+                                    ],
+                                  )),
+                                ),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: RatingBar(
-                                        ignoreGestures: true,
-                                        initialRating: rating,
-                                        minRating: 0.00,
-                                        direction: Axis.horizontal,
-                                        allowHalfRating: true,
-                                        itemCount: 5,
-                                        itemSize: 25,
-                                        itemPadding: EdgeInsets.symmetric(
-                                            horizontal: 1.0),
-                                        itemBuilder: (context, _) => Icon(
-                                          Icons.star,
-                                          color: Colors.black,
+                                    Container(
+                                      padding: EdgeInsets.all(4.0),
+                                      child: RaisedButton(
+                                        color: isInterested
+                                            ? Colors.blue
+                                            : Colors.white,
+                                        textColor: isInterested
+                                            ? Colors.white
+                                            : Colors.black,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                            side: BorderSide(
+                                                color: Colors.lightBlue)),
+                                        onPressed: () async {
+                                          if (isInterested == false) {
+                                            bool res = await AuthClass()
+                                                .addToInterested(widget.oid,
+                                                    widget.category);
+                                            if (res == true) {
+                                              setState(() {
+                                                isInterested = true;
+                                              });
+                                              final snackBar = SnackBar(
+                                                  content: Text(
+                                                      "Marked as interested"));
+                                              Scaffold.of(context)
+                                                  .showSnackBar(snackBar);
+                                            } else {
+                                              final snackBar = SnackBar(
+                                                  content: Text(
+                                                      "Error occurred. Please check your internet connection"));
+                                              Scaffold.of(context)
+                                                  .showSnackBar(snackBar);
+                                            }
+                                          } else {
+                                            bool res = await AuthClass()
+                                                .removeFromInterested(
+                                                    widget.oid,
+                                                    widget.category);
+                                            if (res == true) {
+                                              setState(() {
+                                                isInterested = false;
+                                              });
+                                              final snackBar = SnackBar(
+                                                  content: Text(
+                                                      "Removed from interested"));
+                                              Scaffold.of(context)
+                                                  .showSnackBar(snackBar);
+                                            } else {
+                                              final snackBar = SnackBar(
+                                                  content: Text(
+                                                      "Error occurred. Please check your internet connection"));
+                                              Scaffold.of(context)
+                                                  .showSnackBar(snackBar);
+                                            }
+                                          }
+                                        },
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                      2.0, 0.0, 4.0, 0.0),
+                                              child: Icon(Icons.thumb_up),
+                                            ),
+                                            Text(
+                                              "I am interested",
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: RichText(
-                                          text: TextSpan(
-                                        text: 'Rated by ',
-                                        style:
-                                            DefaultTextStyle.of(context).style,
-                                        children: <TextSpan>[
-                                          TextSpan(
-                                              text: ratingCount,
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
-                                          TextSpan(text: ' people'),
-                                        ],
-                                      )),
-                                    ),
-                                  ],
-                                ),
-                                Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        8.0, 2.0, 2.0, 4.0),
-                                    child: Text(
-                                      "Tags: " + hashtags,
-                                      style: TextStyle(fontSize: 14.0),
-                                    )),
-                                Center(
-                                  child: Container(
-                                    padding: EdgeInsets.all(4.0),
-                                    width: 180.0,
-                                    child: RaisedButton(
-                                      onPressed: () async {
-                                        String message;
-                                        _rateThePost().then((value) {
-                                          if (currentRating > 0 && value) {
-                                            message =
-                                                "Your rating has been submitted.";
-                                          } else if (currentRating > 0 &&
-                                              !value) {
-                                            message =
-                                                "Something went wrong. Check your internet connection";
-                                          } else {
-                                            message = "Canceled";
-                                          }
-                                          final snackBar =
-                                              SnackBar(content: Text(message));
-                                          Scaffold.of(context)
-                                              .showSnackBar(snackBar);
-                                        });
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                2.0, 0.0, 4.0, 0.0),
-                                            child: Icon(Icons.thumb_up),
-                                          ),
-                                          Text(
-                                            "Rate this post",
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
+                                    Container(
+                                      padding: EdgeInsets.all(4.0),
+                                      child: RaisedButton(
+                                        color: Colors.red,
+                                        textColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
+                                            side:
+                                                BorderSide(color: Colors.red)),
+                                        onPressed: () async {},
+                                        child: Row(
+                                          children: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                      2.0, 0.0, 4.0, 0.0),
+                                              child:
+                                                  Icon(Icons.add_shopping_cart),
+                                            ),
+                                            Text(
+                                              "Buy Now",
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    )
+                                  ],
                                 ),
                               ],
                             ),
@@ -257,35 +267,29 @@ class _DetailedPostState extends State<DetailedPost> {
                                 Expanded(
                                     flex: 1,
                                     child: RaisedButton(
-                                      onPressed: () {
+                                      onPressed: () async {
                                         if (_commentFormKey.currentState
                                             .validate()) {
                                           _commentFormKey.currentState.save();
-                                          _getUserCredentials().then((value) {
-                                            ApiCalls.postComment(
-                                                    value[0],
-                                                    value[1],
-                                                    widget.id,
-                                                    comment)
-                                                .then((value) {
-                                              if (value) {
-                                                final snackBar = SnackBar(
-                                                    content:
-                                                        Text("Comment posted"));
-                                                Scaffold.of(context)
-                                                    .showSnackBar(snackBar);
-                                                setState(() {
-                                                  comments.add(comment);
-                                                });
-                                              } else {
-                                                final snackBar = SnackBar(
-                                                    content: Text(
-                                                        "Could not post comment. Check your internet connection."));
-                                                Scaffold.of(context)
-                                                    .showSnackBar(snackBar);
-                                              }
+                                          bool res = await AuthClass()
+                                              .postComment(widget.oid,
+                                                  widget.category, comment);
+                                          if (res == true) {
+                                            setState(() {
+                                              isInterested = isInterested;
                                             });
-                                          });
+                                            final snackBar = SnackBar(
+                                                content: Text(
+                                                    "Comment has been posted"));
+                                            Scaffold.of(context)
+                                                .showSnackBar(snackBar);
+                                          } else {
+                                            final snackBar = SnackBar(
+                                                content: Text(
+                                                    "Error occurred. Please check your network connection"));
+                                            Scaffold.of(context)
+                                                .showSnackBar(snackBar);
+                                          }
                                         }
                                       },
                                       child: Text("Submit"),
@@ -294,23 +298,28 @@ class _DetailedPostState extends State<DetailedPost> {
                             ),
                           ),
                         ),
-                        if (comments.length == 0)
+                        if (userIdsFromComments.length == 1)
                           Text(
                             'No comments found',
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        for (int i = 0; i < comments.length; i++)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 0.0, horizontal: 0.0),
-                            child: Card(
-                              elevation: 5.0,
-                              child: ListTile(
-                                title: Text(comments[i].toString()),
+                        for (int i = 0; i < userIdsFromComments.length; i++)
+                          if (userIdsFromComments[i] != "dummy")
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 0.0, horizontal: 0.0),
+                              child: Card(
+                                elevation: 5.0,
+                                child: ListTile(
+                                  subtitle: Text("commented by " +
+                                      commentTexts[i]["first_name"] +
+                                      " " +
+                                      commentTexts[i]["last_name"], style: TextStyle(fontStyle: FontStyle.italic),),
+                                  title: Text(commentTexts[i]["comment"]),
+                                ),
                               ),
                             ),
-                          ),
                       ],
                     ),
                   ),

@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:marketplace/APICalls.dart';
 import 'package:marketplace/DBHandler.dart';
 import 'package:marketplace/DeviceStatus.dart';
+import 'package:marketplace/SelectCategories.dart';
 import 'package:marketplace/User.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hashtagable/hashtagable.dart';
+import 'package:marketplace/services/auth.dart';
 import 'LoadingScreen.dart';
 import 'main.dart';
 
@@ -20,12 +22,25 @@ class MakeAPost extends StatefulWidget {
 
 class _MakeAPostState extends State<MakeAPost> {
   File _image;
-  String _postText, _textErrorText;
-  bool _textError = false, isConnected = true;
-  List<String> _hashTags;
+  String _titleErrorText, _priceErrorText, _itemDescriptionErrorText;
+  bool _titleError = false,
+      _priceError = false,
+      _itemDescriptionError = false,
+      isConnected = true;
+  String category = "", _postTitle = "", _postDescription = "", _postPrice = "";
+  double _currentSliderValue = 0;
+  Map<int, String> _condition = {
+    0: "Select Condition",
+    20: "New (Never Used)",
+    40: "Open box (Never Used)",
+    60: "Used (Normal wear)",
+    80: "Heavily used",
+    100: "Needs repair/fix"
+  };
   Widget show = Container();
-  final hashTagController = TextEditingController(),
-      postController = TextEditingController();
+  final priceController = TextEditingController(),
+      titleController = TextEditingController(),
+      descriptionController = TextEditingController();
   final GlobalKey<State> _keyLoader = new GlobalKey<State>();
 
   final picker = ImagePicker();
@@ -45,51 +60,76 @@ class _MakeAPostState extends State<MakeAPost> {
 
   //Validates the post for text and hashtags
   bool _validatePostFields() {
-    _postText = hashTagController.text; //Post text
-    _hashTags = extractHashTags(_postText); //Extracts hashtags from the post
+    _postTitle = titleController.text;
+    _postDescription = descriptionController.text;
+    _postPrice = priceController.text;
+    bool error = true;
+
+    if (_postPrice.length == 0) {
+      error = false;
+      setState(() {
+        _priceError = true;
+        _priceErrorText = "Price is required";
+      });
+    } else {
+      setState(() {
+        _priceError = false;
+      });
+    }
 
     //If no text in post
-    if (_postText.length == 0) {
+    if (_postTitle.length == 0) {
+      error = false;
       setState(() {
-        _textError = true;
-        _textErrorText = "Post must contain text";
-      });
-    } else if (_postText.length > 144) {
-      //if post has more than 144 characters
-      setState(() {
-        _textError = true;
-        _textErrorText = "Post must not contain more than 140 characters";
+        _titleError = true;
+        _titleErrorText = "Title is required";
       });
     } else {
       setState(() {
-        _textError = false;
+        _titleError = false;
       });
     }
 
-    //if no hashtags in post
-    if (_hashTags.length == 0) {
+    //If no text in post
+    if (_postDescription.length == 0) {
+      error = false;
       setState(() {
-        _textError = true;
-        _textErrorText = "Post must have some hashtags";
+        _itemDescriptionError = true;
+        _itemDescriptionErrorText = "Description is required";
       });
     } else {
       setState(() {
-        _textError = false;
+        _itemDescriptionError = false;
       });
     }
-    print(_textError); //Debug message
-    return !_textError;
+
+    if (_image == null) {
+      final snackBar = SnackBar(content: Text("Post must contain an Image"));
+      Scaffold.of(context).showSnackBar(snackBar);
+      return false;
+    } else if (_currentSliderValue == 0) {
+      final snackBar =
+          SnackBar(content: Text("Please select the item's condition"));
+      Scaffold.of(context).showSnackBar(snackBar);
+      return false;
+    } else if (category == "") {
+      final snackBar = SnackBar(content: Text("Please select category"));
+      Scaffold.of(context).showSnackBar(snackBar);
+      return false;
+    }
+
+    return error;
   }
 
   //Uploads the post
   Future<bool> _uploadPost(String email, String password) async {
+    //TODO: change Devicestatus function to check if internet connection is available
     isConnected = await DeviceStatus.dstate
         .isDeviceOnline(); //Check the network connection
 
     //if device is online, upload the post
     if (isConnected) {
-      return ApiCalls.uploadPost(email, password, _postText, _hashTags)
-          .then((id) {
+      return ApiCalls.uploadPost(email, password, _postTitle, []).then((id) {
         if (id == -1) {
           print("Error occurred while uploading the post"); //Debug message
           return false;
@@ -114,14 +154,7 @@ class _MakeAPostState extends State<MakeAPost> {
       });
     } else {
       //else save the post in file locally
-      return _image.readAsBytes().then((value) {
-        String encodedImage = base64Encode(value);
-        return DBProvider.db
-            .newPost(encodedImage, _postText, _hashTags.join(" "))
-            .then((value) {
-          return true;
-        });
-      });
+      return false;
     }
   }
 
@@ -148,71 +181,150 @@ class _MakeAPostState extends State<MakeAPost> {
       Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(6.0, 2.0, 6.0, 0.0),
-            child: HashTagTextField(
+            padding: const EdgeInsets.fromLTRB(6.0, 8.0, 6.0, 6.0),
+            child: TextField(
               decoration: InputDecoration(
-                  labelText: "Type your post and Give some hashtags..",
-                  errorText: _textError ? _textErrorText : null),
-              maxLength: 144,
-              keyboardType: TextInputType.multiline,
+                  labelText: "Enter price you are expecting",
+                  errorText: _priceError ? _priceErrorText : null,
+                  border: const OutlineInputBorder()),
+              keyboardType: TextInputType.number,
               maxLines: null,
-              controller: hashTagController,
+              controller: priceController,
             ),
           ),
-          Container(
-            width: 120.0,
-            child: RaisedButton(
-              onPressed: () {
-                if (_validatePostFields()) {
-                  Dialogs.showLoadingDialog(
-                      context, _keyLoader); //invoking loading screen
-                  User.getUserCredentials().then((value) {
-                    String email = value[0];
-                    String password = value[1];
-                    _uploadPost(email, password).then((value) {
-                      if (value == true && isConnected == true) {
-                        Navigator.of(_keyLoader.currentContext,
-                                rootNavigator: true)
-                            .pop();
-                        final snackBar = SnackBar(
-                            content: Text("Post uploaded successfully"));
-                        Scaffold.of(context).showSnackBar(snackBar);
-                      } else if (value == true && isConnected == false) {
-                        Navigator.of(_keyLoader.currentContext,
-                                rootNavigator: true)
-                            .pop();
-                        final snackBar = SnackBar(
-                            content: Text(
-                                "You are offline. Post will be updated when device comes online"));
-                        Scaffold.of(context).showSnackBar(snackBar);
-                      } else {
-                        Navigator.of(_keyLoader.currentContext,
-                                rootNavigator: true)
-                            .pop();
-                        final snackBar =
-                            SnackBar(content: Text("Post upload failed"));
-                        Scaffold.of(context).showSnackBar(snackBar);
-                      }
-                      setState(() {
-                        _image = null;
-                        hashTagController.clear();
-                      });
-                    });
-                  });
-                }
-              },
-              child: Row(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6.0, 8.0, 6.0, 2.0),
+            child: TextField(
+              decoration: InputDecoration(
+                  labelText: "Give title to your ad..",
+                  errorText: _titleError ? _titleErrorText : null,
+                  border: const OutlineInputBorder()),
+              maxLength: 100,
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              controller: titleController,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 2.0),
+            child: TextField(
+              decoration: InputDecoration(
+                  labelText: "Describe your item",
+                  errorText:
+                      _itemDescriptionError ? _itemDescriptionErrorText : null,
+                  border: const OutlineInputBorder()),
+              maxLength: 200,
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              controller: descriptionController,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 8.0),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(8.0, 12.0, 8.0, 8.0),
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4.0),
+                  border: Border.all(color: Colors.grey)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(2.0, 0.0, 4.0, 0.0),
-                    child: Icon(Icons.upload_outlined),
-                  ),
                   Text(
-                    "Post",
-                    textAlign: TextAlign.center,
+                    "Condition of your item: " +
+                        _condition[_currentSliderValue.toInt()],
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
                   ),
+                  Slider(
+                    value: _currentSliderValue,
+                    min: 0,
+                    max: 100,
+                    divisions: 5,
+                    label: _condition[_currentSliderValue.toInt()],
+                    onChanged: (double value) {
+                      setState(() {
+                        _currentSliderValue = value;
+                      });
+                    },
+                  )
                 ],
               ),
+            ),
+          ),
+          SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(6.0, 4.0, 6.0, 12.0),
+              child: FlatButton(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4.0),
+                    side: BorderSide(color: Colors.grey)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      category == ""
+                          ? Text(
+                              "Select Category ",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16.0),
+                            )
+                          : Text(
+                              "Current Category: " + category,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16.0),
+                            ),
+                      Icon(Icons.arrow_forward_ios_rounded)
+                    ],
+                  ),
+                ),
+                onPressed: () async {
+                  var newCat = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SelectCategory()),
+                  );
+                  if (newCat != null) {
+                    setState(() {
+                      category = newCat;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(4.0),
+              child: RaisedButton(
+                  color: Colors.green,
+                  textColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      side: BorderSide(color: Colors.white)),
+                  onPressed: () async {
+                    if (_validatePostFields()) {
+                      Dialogs.showLoadingDialog(
+                          context, _keyLoader); //invoking loading screen
+                      String oid = await AuthClass().postAd(
+                          _postPrice,
+                          _postTitle,
+                          _postDescription,
+                          category,
+                          _condition[_currentSliderValue.toInt()]);
+                      await AuthClass().uploadImage(oid, category, _image);
+                      final snackBar = SnackBar(content: Text(oid));
+                      Scaffold.of(context).showSnackBar(snackBar);
+                      Navigator.of(_keyLoader.currentContext,
+                              rootNavigator: true)
+                          .pop();
+                    }
+                  },
+                  child: Text("Submit",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16.0))),
             ),
           ),
           Container(

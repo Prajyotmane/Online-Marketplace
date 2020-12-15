@@ -29,7 +29,7 @@ class _HashTagListState extends State<HashTagList> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => ShowPosts(snapshot.data[index],false)),
+                                builder: (context) => ShowPosts(snapshot.data[index])),
                           );
                         },
                         title: Text(snapshot.data[index]),

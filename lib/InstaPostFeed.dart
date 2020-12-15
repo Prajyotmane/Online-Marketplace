@@ -13,7 +13,7 @@ class _InstaPostFeedState extends State<InstaPostFeed> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Column(
         children: <Widget>[
           Container(
@@ -24,21 +24,18 @@ class _InstaPostFeedState extends State<InstaPostFeed> {
               child: TabBar(
                 tabs: [
                   Tab(
-                    text: "Users",
+                    text: "Categories",
                   ),
                   Tab(
                     text: "Post",
-                  ),
-                  Tab(
-                    text: "Hashtags",
-                  ),
+                  )
                 ],
               ),
             ),
           ),
           Expanded(
             child: TabBarView(
-              children: [NickNameList(),MakeAPost(), HashTagList()],
+              children: [NickNameList(),MakeAPost()],
             ),
           ),
         ],

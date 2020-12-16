@@ -1,16 +1,14 @@
 import 'package:marketplace/CategoriesProvider.dart';
 import 'package:marketplace/ShowPosts.dart';
 import 'package:flutter/material.dart';
-import 'APICalls.dart';
-import 'dart:io';
 import 'dart:convert';
 
-class NickNameList extends StatefulWidget {
+class ShowCategory extends StatefulWidget {
   @override
-  _NickNameListState createState() => _NickNameListState();
+  _ShowCategoryState createState() => _ShowCategoryState();
 }
 
-class _NickNameListState extends State<NickNameList> {
+class _ShowCategoryState extends State<ShowCategory> {
 
   @override
   Widget build(BuildContext context) {

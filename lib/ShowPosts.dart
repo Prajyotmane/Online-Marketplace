@@ -1,11 +1,7 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:marketplace/PostDetails.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marketplace/services/auth.dart';
-import 'APICalls.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 /* This class loads the image for a particular nickname or hashhag depending on showPostsfromNickName parameter, if true, load image for nickname else load image for hashtags */
 
@@ -76,6 +72,7 @@ class _ShowPostsState extends State<ShowPosts> {
     return ListView.builder(
         itemCount: orderIDs!=null?orderIDs.length:0,
         itemBuilder: (context, index) {
+          // print("Post Details : "+ orderIDs[index].toString());
           return orderDetails[index]["is_available"]?InkWell(
             onTap: () {
               Navigator.push(
@@ -100,7 +97,7 @@ class _ShowPostsState extends State<ShowPosts> {
                 ),
               ),
             ),
-          ):null;
+          ):Container();
         });
   }
 

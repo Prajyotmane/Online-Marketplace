@@ -1,17 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:marketplace/APICalls.dart';
-import 'package:marketplace/DBHandler.dart';
-import 'package:marketplace/DeviceStatus.dart';
 import 'package:marketplace/SelectCategories.dart';
-import 'package:marketplace/User.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hashtagable/hashtagable.dart';
 import 'package:marketplace/services/auth.dart';
 import 'LoadingScreen.dart';
-import 'main.dart';
 
 /* This module handles the user's post upload action*/
 
@@ -119,43 +113,6 @@ class _MakeAPostState extends State<MakeAPost> {
     }
 
     return error;
-  }
-
-  //Uploads the post
-  Future<bool> _uploadPost(String email, String password) async {
-    //TODO: change Devicestatus function to check if internet connection is available
-    isConnected = await DeviceStatus.dstate
-        .isDeviceOnline(); //Check the network connection
-
-    //if device is online, upload the post
-    if (isConnected) {
-      return ApiCalls.uploadPost(email, password, _postTitle, []).then((id) {
-        if (id == -1) {
-          print("Error occurred while uploading the post"); //Debug message
-          return false;
-        } else {
-          print("Post ID is " + id.toString()); //Debug message
-          if (_image != null) {
-            return _image.readAsBytes().then((value) {
-              String encodedImage = base64Encode(value);
-              return ApiCalls.uploadImage(email, password, id, encodedImage)
-                  .then((response) {
-                if (response == true) {
-                  return true;
-                } else {
-                  return false;
-                }
-              });
-            });
-          } else {
-            return true;
-          }
-        }
-      });
-    } else {
-      //else save the post in file locally
-      return false;
-    }
   }
 
   @override
@@ -325,38 +282,6 @@ class _MakeAPostState extends State<MakeAPost> {
                   child: Text("Submit",
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16.0))),
-            ),
-          ),
-          Container(
-            margin: EdgeInsets.fromLTRB(0.0, 10.0, 0, 0),
-            width: 120.0,
-            child: RaisedButton(
-              onPressed: () async {
-                Dialogs.showLoadingDialog(context, _keyLoader);
-                bool res = await User.userLogout();
-                if (!res) {
-                  final snackBar = SnackBar(content: Text("Logout Failed"));
-                  Scaffold.of(context).showSnackBar(snackBar);
-                }
-                Navigator.of(_keyLoader.currentContext, rootNavigator: true)
-                    .pop();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => MyApp()),
-                );
-              },
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(2.0, 0.0, 4.0, 0.0),
-                    child: Icon(Icons.logout),
-                  ),
-                  Text(
-                    "Logout",
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
             ),
           )
         ],

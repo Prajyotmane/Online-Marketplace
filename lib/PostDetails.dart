@@ -1,14 +1,8 @@
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:marketplace/RateThePost.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marketplace/services/auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/src/material/card.dart' as card;
-import 'constants.dart';
-import 'APICalls.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:square_in_app_payments/in_app_payments.dart';
 import 'package:square_in_app_payments/models.dart';
 
@@ -101,7 +95,6 @@ class _DetailedPostState extends State<DetailedPost> {
                   snapshot.data["interested_users"].keys;
               List<String> userIdsFromComments =
                   snapshot.data["comments"].keys.toList();
-              print(userIdsFromComments.toString());
               List<dynamic> commentTexts =
                   snapshot.data["comments"].values.toList();
               bool availability = snapshot.data["is_available"];
@@ -307,7 +300,7 @@ class _DetailedPostState extends State<DetailedPost> {
                                           labelText: "Type your comment.."),
                                       validator: (value) {
                                         if (value.isEmpty) {
-                                          return ERROR_TEXT;
+                                          return "This field is required";
                                         }
                                         return null;
                                       },

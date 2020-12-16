@@ -2,8 +2,6 @@ import 'package:marketplace/main.dart';
 import 'package:flutter/material.dart';
 import 'package:marketplace/services/auth.dart';
 import 'LoadingScreen.dart';
-import 'constants.dart';
-import 'APICalls.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /* this class handles login activity for the user */
@@ -23,15 +21,6 @@ class _LoginPageState extends State<LoginPage> {
     RegExp regex = new RegExp(pattern);
     return (!regex.hasMatch(value)) ? false : true;
   }
-
-  Future<bool> _saveUserDetails(String _email, String _password) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool("USER_LOGGED_IN", true);
-    prefs.setString("EMAIL", _email);
-    prefs.setString("PASSWORD", _password);
-    return true;
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -52,10 +41,10 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     TextFormField(
-                      decoration: InputDecoration(labelText: EMAIL),
+                      decoration: InputDecoration(labelText: "Email"),
                       validator: (value) {
                         if (value.isEmpty) {
-                          return ERROR_TEXT;
+                          return "This field is required";
                         } else if (validateEmail(value) == false) {
                           return "Email ID is invalid";
                         }
@@ -66,11 +55,11 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                     TextFormField(
-                      decoration: InputDecoration(labelText: PASSWORD),
+                      decoration: InputDecoration(labelText: "Password"),
                       obscureText: true,
                       validator: (value) {
                         if (value.isEmpty) {
-                          return ERROR_TEXT;
+                          return "This field is required";
                         } else if (value.length < 3) {
                           return "Password length must be at least 3";
                         }
@@ -96,24 +85,21 @@ class _LoginPageState extends State<LoginPage> {
                                       AuthClass().signInwithEmail(_email, _password)
                                           .then((value) {
                                         if (value=="") {
-                                          _saveUserDetails(_email, _password)
-                                              .then((value) {
-                                            Navigator.of(
-                                                    _keyLoader.currentContext,
-                                                    rootNavigator: true)
-                                                .pop();
-                                            final snackBar = SnackBar(
-                                                content:
-                                                    Text("Login successful"));
-                                            Scaffold.of(context)
-                                                .showSnackBar(snackBar);
-                                            Navigator.pushReplacement(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      MyApp()),
-                                            );
-                                          });
+                                          Navigator.of(
+                                              _keyLoader.currentContext,
+                                              rootNavigator: true)
+                                              .pop();
+                                          final snackBar = SnackBar(
+                                              content:
+                                              Text("Login successful"));
+                                          Scaffold.of(context)
+                                              .showSnackBar(snackBar);
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    MyApp()),
+                                          );
                                         } else {
                                           Navigator.of(
                                                   _keyLoader.currentContext,

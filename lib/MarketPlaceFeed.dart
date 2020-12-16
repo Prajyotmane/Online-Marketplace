@@ -1,5 +1,4 @@
-import 'package:marketplace/PostsByNickName.dart';
-import 'package:marketplace/PostsByhashTag.dart';
+import 'package:marketplace/ShowCategory.dart';
 import 'package:flutter/material.dart';
 import 'MakePost.dart';
 
@@ -35,7 +34,7 @@ class _InstaPostFeedState extends State<InstaPostFeed> {
           ),
           Expanded(
             child: TabBarView(
-              children: [NickNameList(),MakeAPost()],
+              children: [ShowCategory(),MakeAPost()],
             ),
           ),
         ],

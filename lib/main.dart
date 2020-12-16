@@ -1,14 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:marketplace/CacheFileManager.dart';
-import 'package:marketplace/InstaPostFeed.dart';
+import 'package:marketplace/LoginPage.dart';
+import 'package:marketplace/MarketPlaceFeed.dart';
 import 'package:flutter/material.dart';
 import 'package:marketplace/MyOrders.dart';
 import 'package:marketplace/Signup.dart';
 import 'package:marketplace/services/auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'LoadingScreen.dart';
-import 'constants.dart';
-import 'LoginPage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,18 +18,13 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _firstName = "",
-      _lastName = "",
-      _email = "",
-      _password = "",
-      _confirmPassword = "",
-      _pendingPostMessage = "Checking for pending posts";
-  final _formKey = GlobalKey<FormState>();
+
+  bool isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
-    CacheFileManager.init();
+    this.isLoggedIn = AuthClass().isLoggedIn();
   }
 
   bool validateEmail(String value) {
@@ -41,19 +32,6 @@ class _MyAppState extends State<MyApp> {
         r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
     RegExp regex = new RegExp(pattern);
     return (!regex.hasMatch(value)) ? false : true;
-  }
-
-
-  //Check if user is logged in by checking the sharedpreferences data
-  Future<bool> _isUserLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool response = prefs.getBool("USER_LOGGED_IN");
-    if (response) {
-      _email = prefs.getString("EMAIL");
-      _password = prefs.getString("PASSWORD");
-    }
-    print("Response: " + response.toString()); //Debug message
-    return response;
   }
 
   final GlobalKey<State> _keyLoader = new GlobalKey<State>();
@@ -68,19 +46,28 @@ class _MyAppState extends State<MyApp> {
                 title: Text("MarketPlace"),
                 backgroundColor: Colors.black,
                 actions: [
-                  IconButton(icon: Icon(Icons.shopping_cart), onPressed: ()
+                  isLoggedIn?IconButton(icon: Icon(Icons.shopping_cart), onPressed: ()
                   {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => MyOrders(),
                         ));
-                  }),
-                  IconButton(icon: Icon(Icons.logout), onPressed: () {})
+                  }):Container(),
+                  isLoggedIn?IconButton(icon: Icon(Icons.logout), onPressed: () {
+                    AuthClass().signOut();
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                LoginPage())
+                    );
+                  }
+                  ):Container()
                 ],
               ),
               body: FutureBuilder(
-                  future: _isUserLoggedIn(),
+                  future: AuthClass().isUserLoggedIn(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.done) {
                       if (snapshot.data == true) {

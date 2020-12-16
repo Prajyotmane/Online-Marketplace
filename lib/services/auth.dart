@@ -45,7 +45,6 @@ class AuthClass {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
-      print(userCredential.user.uid);
       return "";
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -54,6 +53,24 @@ class AuthClass {
         return 'Wrong password provided for that user.';
       }
     }
+  }
+
+  Future<bool> isUserLoggedIn() async {
+    if (_auth.currentUser != null) {
+      return true;
+    }
+    return false;
+  }
+
+  bool isLoggedIn(){
+    if (_auth.currentUser != null) {
+      return true;
+    }
+    return false;
+  }
+
+  signOut() async {
+    await _auth.signOut();
   }
 
   Future<String> postAd(String price, String title, String description,
@@ -67,7 +84,8 @@ class AuthClass {
       "user": _auth.currentUser.uid,
       "likes": "0",
       "interested_users": {"dummy": true},
-      "comments": {"dummy": "dummy"}
+      "comments": {"dummy": "dummy"},
+      "is_available": true
     };
     try {
       String _uid = _auth.currentUser.uid;
@@ -127,7 +145,6 @@ class AuthClass {
       key = snapshot.key;
     });
     Map<String, dynamic> posts = jsonDecode(data);
-    print("Post : " + posts.toString());
     return posts;
   }
 
@@ -204,38 +221,58 @@ class AuthClass {
     String userID = _auth.currentUser.uid;
     try {
       Map<String, dynamic> user = await this.getUserDetails(userID);
-      await _orderRef
-          .child(category)
-          .child(oid)
-          .child("comments")
-          .push()
-          .set({"first_name":user["first_name"],
+      await _orderRef.child(category).child(oid).child("comments").push().set({
+        "first_name": user["first_name"],
         "last_name": user["last_name"],
-      "comment": comment});
+        "comment": comment
+      });
       return true;
     } on Exception catch (e) {
       return false;
     }
   }
 
-  Future<bool> completeItemPurchase(String oid, String category, String owner) async{
+  Future<bool> completeItemPurchase(
+      String oid, String category, String owner) async {
     String userID = _auth.currentUser.uid;
     try {
       await _orderRef
           .child(category)
           .child(oid)
           .update({"is_available": false});
-      await _userRef
-          .child(userID)
-          .child("purchased")
-          .update({oid: category});
-      await _userRef
-          .child(owner)
-          .child("sold")
-          .update({oid: category});
+      await _userRef.child(userID).child("purchased").update({oid: category});
+      await _userRef.child(owner).child("sold").update({oid: category});
       return true;
-    } on Exception catch(e){
+    } on Exception catch (e) {
       return false;
     }
+  }
+
+  Future<Map<String, dynamic>> getMyAds() async {
+    var data;
+    String userID = _auth.currentUser.uid;
+    await _userRef
+        .child(userID)
+        .child("orders")
+        .once()
+        .then((DataSnapshot snapshot) {
+      data = jsonEncode(snapshot.value);
+    });
+    Map<String, dynamic> posts = jsonDecode(data);
+    return posts;
+  }
+
+  Future<Map<String, dynamic>> getMyPurchased() async {
+    var data;
+    String userID = _auth.currentUser.uid;
+    await _userRef
+        .child(userID)
+        .child("purchased")
+        .once()
+        .then((DataSnapshot snapshot) {
+      data = jsonEncode(snapshot.value);
+    });
+    Map<String, dynamic> posts = jsonDecode(data);
+    return posts;
   }
 }

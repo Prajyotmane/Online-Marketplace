@@ -32,7 +32,7 @@ class _MyOrdersState extends State<MyOrders> {
                           text: "My Ads",
                         ),
                         Tab(
-                          text: "Post",
+                          text: "My Purchases",
                         )
                       ],
                     ),

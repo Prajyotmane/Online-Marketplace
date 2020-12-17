@@ -57,8 +57,26 @@ class _ShowPostsState extends State<ShowPosts> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Text("Liked by "+ ad['likes']+" people",
+                    padding: const EdgeInsets.all(6.0),
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: Icon(Icons.location_on),
+                        ),
+                        Text(
+                          ad["pickup_address"],
+                          style: TextStyle(
+                              fontSize: 16.0,
+                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.normal),
+                        )
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Text(ad['likes']+" people are interested",
                       style: TextStyle(fontSize: 14.0, fontStyle: FontStyle.italic),
                     ),
                   ),

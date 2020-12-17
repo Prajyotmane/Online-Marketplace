@@ -73,7 +73,7 @@ class AuthClass {
     await _auth.signOut();
   }
 
-  Future<String> postAd(String price, String title, String description,
+  Future<String> postAd(String address, String price, String title, String description,
       String category, String condition) async {
     Map<String, dynamic> orderDetail = {
       "title": title,
@@ -85,7 +85,8 @@ class AuthClass {
       "likes": "0",
       "interested_users": {"dummy": true},
       "comments": {"dummy": "dummy"},
-      "is_available": true
+      "is_available": true,
+      "pickup_address": address
     };
     try {
       String _uid = _auth.currentUser.uid;

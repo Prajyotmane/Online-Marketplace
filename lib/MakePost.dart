@@ -16,12 +16,13 @@ class MakeAPost extends StatefulWidget {
 
 class _MakeAPostState extends State<MakeAPost> {
   File _image;
-  String _titleErrorText, _priceErrorText, _itemDescriptionErrorText;
+  String _titleErrorText, _priceErrorText, _itemDescriptionErrorText, _itemAddressErrorText;
   bool _titleError = false,
       _priceError = false,
       _itemDescriptionError = false,
+  _itemAddressError = false,
       isConnected = true;
-  String category = "", _postTitle = "", _postDescription = "", _postPrice = "";
+  String category = "", _postTitle = "", _postDescription = "", _postPrice = "", _postAddress = "";
   double _currentSliderValue = 0;
   Map<int, String> _condition = {
     0: "Select Condition",
@@ -34,7 +35,9 @@ class _MakeAPostState extends State<MakeAPost> {
   Widget show = Container();
   final priceController = TextEditingController(),
       titleController = TextEditingController(),
-      descriptionController = TextEditingController();
+      descriptionController = TextEditingController(),
+      addressController = TextEditingController();
+
   final GlobalKey<State> _keyLoader = new GlobalKey<State>();
 
   final picker = ImagePicker();
@@ -52,11 +55,11 @@ class _MakeAPostState extends State<MakeAPost> {
     });
   }
 
-  //Validates the post for text and hashtags
   bool _validatePostFields() {
     _postTitle = titleController.text;
     _postDescription = descriptionController.text;
     _postPrice = priceController.text;
+    _postAddress = addressController.text;
     bool error = true;
 
     if (_postPrice.length == 0) {
@@ -94,6 +97,19 @@ class _MakeAPostState extends State<MakeAPost> {
     } else {
       setState(() {
         _itemDescriptionError = false;
+      });
+    }
+
+    //If no text in post
+    if (_postAddress.length == 0) {
+      error = false;
+      setState(() {
+        _itemAddressError = true;
+        _itemAddressErrorText = "Pick-up address is required";
+      });
+    } else {
+      setState(() {
+        _itemAddressError = false;
       });
     }
 
@@ -251,6 +267,20 @@ class _MakeAPostState extends State<MakeAPost> {
             ),
           ),
           Padding(
+            padding: const EdgeInsets.fromLTRB(6.0, 0.0, 6.0, 2.0),
+            child: TextField(
+              decoration: InputDecoration(
+                  labelText: "Enter pick-up address for the item",
+                  errorText:
+                  _itemAddressError ? _itemAddressErrorText : null,
+                  border: const OutlineInputBorder()),
+              maxLength: 200,
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              controller: addressController,
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.all(8.0),
             child: Container(
               width: double.infinity,
@@ -266,13 +296,14 @@ class _MakeAPostState extends State<MakeAPost> {
                       Dialogs.showLoadingDialog(
                           context, _keyLoader); //invoking loading screen
                       String oid = await AuthClass().postAd(
+                          _postAddress,
                           _postPrice,
                           _postTitle,
                           _postDescription,
                           category,
                           _condition[_currentSliderValue.toInt()]);
                       await AuthClass().uploadImage(oid, category, _image);
-                      final snackBar = SnackBar(content: Text(oid));
+                      final snackBar = SnackBar(content: Text("Ad posted successfully"));
                       Scaffold.of(context).showSnackBar(snackBar);
                       Navigator.of(_keyLoader.currentContext,
                               rootNavigator: true)

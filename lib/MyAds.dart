@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:marketplace/services/auth.dart';
 
@@ -29,9 +30,21 @@ class _MyAdsState extends State<MyAds> {
         children: [
           Padding(
             padding: const EdgeInsets.all(6.0),
-            child: Text(
-              "\$"+ad["price"],
-              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "\$"+ad["price"],
+                  style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    Icon(ad["is_available"]?Icons.warning_amber_rounded:Icons.done),
+                    Text(ad["is_available"]?"Not Sold":"Sold", style: TextStyle(fontWeight: FontWeight.bold))
+
+                  ],
+                )
+              ],
             ),
           ),
           Padding(

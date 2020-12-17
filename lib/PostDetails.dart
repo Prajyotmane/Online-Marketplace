@@ -51,22 +51,22 @@ class _DetailedPostState extends State<DetailedPost> {
 
   void onCardSuccess(
       CardDetails cardDetails, String owner, BuildContext context) {
-    print(cardDetails.nonce); // here you get the nonce
+    // here you get the nonce
     // The following method dismisses the card entry UI
     // It is required to be called
     InAppPayments.completeCardEntry(onCardEntryComplete: () async {
-      bool res = await AuthClass()
-          .completeItemPurchase(widget.oid, widget.category, owner);
-      if (res == true) {
-        final snackBar = SnackBar(content: Text("Transaction completed"));
-        Scaffold.of(context).showSnackBar(snackBar);
-        print("Transaction completed");
-        setState(() {});
-      } else {
-        final snackBar = SnackBar(content: Text("Transaction failed"));
-        Scaffold.of(context).showSnackBar(snackBar);
-        print("Transaction failed");
-      }
+        bool res = await AuthClass()
+            .completeItemPurchase(widget.oid, widget.category, owner);
+        if (res == true) {
+          final snackBar = SnackBar(content: Text("Transaction completed"));
+          Scaffold.of(context).showSnackBar(snackBar);
+          setState(() {});
+        } else {
+          final snackBar = SnackBar(content: Text("Transaction failed"));
+          Scaffold.of(context).showSnackBar(snackBar);
+          print("Transaction failed");
+        }
+
 
       // code here will be execute after the card entry UI is dismissed
     });
@@ -98,7 +98,7 @@ class _DetailedPostState extends State<DetailedPost> {
               List<dynamic> commentTexts =
                   snapshot.data["comments"].values.toList();
               bool availability = snapshot.data["is_available"];
-              String owner = snapshot.data["owner"];
+              String owner = snapshot.data["user"];
               bool isInterested =
                   interested_users.contains(AuthClass().getCurrentUser())
                       ? true
@@ -123,7 +123,7 @@ class _DetailedPostState extends State<DetailedPost> {
                                   child: Text(
                                     "\$" + snapshot.data["price"],
                                     style: TextStyle(
-                                        fontSize: 18.0,
+                                        fontSize: 20.0,
                                         fontWeight: FontWeight.bold),
                                   ),
                                 ),
@@ -132,9 +132,84 @@ class _DetailedPostState extends State<DetailedPost> {
                                   child: Text(
                                     snapshot.data["title"],
                                     style: TextStyle(
-                                        fontSize: 16.0,
+                                        fontSize: 20.0,
                                         fontWeight: FontWeight.bold),
                                   ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                    "Category : " + snapshot.data["category"],
+                                    style: TextStyle(
+                                        fontSize: 14.0,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.normal),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Text(
+                                    "Description : " +
+                                        snapshot.data["description"],
+                                    style: TextStyle(
+                                        fontSize: 14.0,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.normal),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                      6.0, 6.0, 6.0, 16.0),
+                                  child: Text(
+                                    "Item Condition : " +
+                                        snapshot.data["condition"],
+                                    style: TextStyle(
+                                        fontSize: 14.0,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.normal),
+                                  ),
+                                ),
+                                Row(children: <Widget>[
+                                  Expanded(
+                                    child: new Container(
+                                        margin: const EdgeInsets.only(
+                                            left: 10.0, right: 20.0),
+                                        child: Divider(
+                                          color: Colors.black,
+                                          height: 28,
+                                        )),
+                                  ),
+                                  Text("Pick-up address"),
+                                  Expanded(
+                                    child: new Container(
+                                        margin: const EdgeInsets.only(
+                                            left: 20.0, right: 10.0),
+                                        child: Divider(
+                                          color: Colors.black,
+                                          height: 28,
+                                        )),
+                                  ),
+                                ]),
+                                Padding(
+                                  padding: const EdgeInsets.all(6.0),
+                                  child: Row(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(6.0),
+                                        child: Icon(Icons.location_on),
+                                      ),
+                                      Text(
+                                        snapshot.data["pickup_address"],
+                                        style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontStyle: FontStyle.italic,
+                                            fontWeight: FontWeight.normal),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                                Divider(
+                                  color: Colors.black,
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(4.0),
